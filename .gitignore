@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# Database
+*.db
+
+# Reports (may contain redacted findings — never commit)
+reports/
+
+# Environment
+.env
+.venv/
+venv/

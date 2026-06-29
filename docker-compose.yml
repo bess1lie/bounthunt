@@ -1,0 +1,29 @@
+version: "3.9"
+
+services:
+  bountyhunt:
+    build: .
+    image: bountyhunt:latest
+    container_name: bountyhunt
+    volumes:
+      # Mount your scope YAML and .env config
+      - ./scope.yaml:/data/scope.yaml:ro
+      - ./.env:/data/.env:ro
+      # Persist database and reports
+      - ./data:/data/data
+    environment:
+      - PYTHONUNBUFFERED=1
+    working_dir: /data
+    # Run a full scan every 6 hours (cron-like pattern)
+    # Override command in docker-compose run for ad-hoc scans
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          echo "--- Scan: $$(date) ---"
+          bountyhunt scan scope.yaml --all
+          echo "--- Report: $$(date) ---"
+          bountyhunt report --output /data/data/report.md --target example.com
+          echo "--- Sleeping 6h ---"
+          sleep 21600
+        done

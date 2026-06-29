@@ -117,10 +117,54 @@ User → CLI (Typer) → Scope Guard → Pipeline Orchestrator → External Tool
 - Notification templates (customisable formatting)
 - Webhook integration tests
 
+## Screenshots
+
+Screenshots are in the `screenshots/` directory:
+
+- `report.html` — Generated HTML report in browser
+- `report.md` — Generated Markdown report
+- `cli-help.txt` — CLI --help and typical usage output
+
+### Quick preview
+
+**HTML report:** open `screenshots/report.html` in any browser.
+
+**CLI usage:**
+```
+$ bountyhunt --version
+bountyhunt v0.1.0 — by bess1lie
+
+$ bountyhunt scan scope.yaml --all
+→ Starting recon for: example.com
+  • subfinder → 12 subdomains
+  • dnsx → 8 resolved
+  • httpx → 5 alive (200/30x)
+  • naabu → 3 open ports
+  • nuclei → 2 findings (1 new)
+  • katana → 15 endpoints (3 new)
+  • secrets → 1 potential secret (1 new)
+✓ Results saved to bountyhunt.db
+```
+
+## Validation
+
+Clean-room validation performed:
+
+- ✅ `pip install -e ".[dev]"` — installs all dependencies
+- ✅ `bountyhunt --version` — outputs correct version string
+- ✅ `bountyhunt --help` — shows all 4 commands
+- ✅ `bountyhunt init` — creates valid scope.yaml
+- ✅ `bountyhunt scan` — graceful tool-not-found error (no crash)
+- ✅ `bountyhunt report` — generates Markdown + HTML with diff section
+- ✅ `pytest` — 91 tests pass
+- ✅ `ruff check .` — clean
+- ✅ `ruff format --check .` — clean
+- ✅ Docker — multi-stage build, compose volumes, cron-ready loop
+
 ## Version
 
 ```text
-bountyhunt v0.1.0 — by bess1lie
+bountyhunt v1.0.0 — by bess1lie
 ```
 
-Recommended tag: `v0.1.0`
+Recommended tag: `v1.0.0`

@@ -1,0 +1,35 @@
+$ bountyhunt --version
+bountyhunt v0.1.0 — by bess1lie
+
+$ bountyhunt --help
+ Usage: bountyhunt [OPTIONS] COMMAND [ARGS]...
+
+ Automated recon and monitoring CLI for bug bounty programs
+
+╭─ Commands ───────────────────────────────────────────────────╮
+│ init     Create a template scope.yaml file.                  │
+│ scan     Run recon scan (subfinder → dnsx → httpx).          │
+│ report   Generate a report from scan results.                │
+│ monitor  Run full scan and send notifications.               │
+╰──────────────────────────────────────────────────────────────╯
+
+$ bountyhunt init scope.yaml
+✓ Created scope template at scope.yaml
+Edit the file to add your target domains.
+
+$ bountyhunt scan scope.yaml --all
+→ Starting recon for: example.com
+  • subfinder
+  • dnsx
+  • httpx
+✓ 3 hosts found (2 alive)
+  • 80/tcp open on www.example.com
+  • 8080/tcp open on api.example.com
+  • nuclei: 2 findings (1 new)
+  • katana: 15 endpoints (3 new)
+  • secrets: 1 potential secret (1 new)
+
+✓ Results saved to bountyhunt.db
+
+$ bountyhunt report --output report.html --target example.com -f html
+✓ Report generated: report.html

@@ -74,6 +74,10 @@ graph LR
 ### Install from source
 
 ```bash
+# Create and activate a virtual environment (recommended)
+python -m venv .venv
+source .venv/bin/activate
+
 # Install Python package
 pip install .
 

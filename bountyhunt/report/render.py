@@ -65,13 +65,9 @@ T_SECRETS = """
 {% endfor %}
 """
 T_DIFF_BASELINE = """
-## Changes Since Last Scan
-
 *Baseline run — no prior scan to compare.  Run a second scan to see diff.*
 """
 T_DIFF_NONE = """
-## Changes Since Last Scan
-
 *No new findings since last scan.*
 """
 T_DIFF_HOSTS = """

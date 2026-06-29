@@ -1,4 +1,4 @@
-# Bountyhunt v0.1.0 — Release Notes
+# Bountyhunt v1.0.0 — Release Notes
 
 ## Repository Structure
 
@@ -91,8 +91,8 @@ User → CLI (Typer) → Scope Guard → Pipeline Orchestrator → External Tool
 
 | Module | Tests | Coverage |
 |--------|-------|----------|
-| scope | 13 | Exact/wildcard/deny/can_scan/targets/case_insensitive/mixed |
-| db | 12 | Init/CRUD/upsert/scan_runs/hosts_since/port_ops/per-target/redact |
+| scope | 17 | Exact/wildcard/deny/can_scan/targets/case_insensitive/mixed/deny_wildcard |
+| db | 9 | Init/CRUD/upsert/scan_runs/hosts_since/port_ops/per-target |
 | recon | 5 | Mock pipeline/OOS filter/graceful degradation |
 | portscan | 4 | Scope filter/empty input/to_urls |
 | techdetect | 4 | Dedup/empty DB/categorisation/JSON strings |

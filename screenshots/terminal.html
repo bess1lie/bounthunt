@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head><title>terminal</title>
+<style>
+body { background: #0d1117; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; font-family: 'Courier New', monospace; }
+.terminal { background: #161b22; border: 1px solid #30363d; border-radius: 12px; width: 740px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+.titlebar { background: #1c2128; padding: 12px 16px; display: flex; align-items: center; border-bottom: 1px solid #30363d; }
+.dot { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+.dot.red { background: #f85149; }
+.dot.yellow { background: #d29922; }
+.dot.green { background: #3fb950; }
+.titlebar-text { color: #8b949e; font-size: 13px; margin-left: 12px; }
+.body { padding: 20px; }
+.line { color: #c9d1d9; font-size: 14px; line-height: 1.7; white-space: pre; }
+.prompt { color: #58a6ff; }
+.cmd { color: #f0f6fc; }
+.arrow { color: #d2a8ff; }
+.ok { color: #3fb950; }
+.info { color: #8b949e; }
+.highlight { color: #f0883e; }
+.secret { color: #f85149; }
+.divider { color: #30363d; }
+.blink { animation: blink 1s step-end infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+<div class="terminal">
+  <div class="titlebar">
+    <div class="dot red"></div>
+    <div class="dot yellow"></div>
+    <div class="dot green"></div>
+    <span class="titlebar-text">bountyhunt — example.com</span>
+  </div>
+  <div class="body">
+    <div class="line"><span class="prompt">$</span> <span class="cmd">bountyhunt scan scope.yaml --all</span></div>
+    <div class="line"><span class="arrow">→</span> Starting full pipeline for: example.com</div>
+    <div class="line"><span class="info">  • subfinder — subdomain discovery</span></div>
+    <div class="line"><span class="info">  • dnsx — DNS resolution</span></div>
+    <div class="line"><span class="info">  • httpx — host probing</span></div>
+    <div class="line"><span class="info">  • naabu — port scanning</span></div>
+    <div class="line"><span class="info">  • nuclei — vulnerability detection</span></div>
+    <div class="line"><span class="info">  • katana — content crawling</span></div>
+    <div class="line"><span class="info">  • secrets — secret discovery</span></div>
+    <div class="line"><span class="divider">────────────────────────────────────</span></div>
+    <div class="line"><span class="ok">✓</span> <span class="highlight">3</span> hosts found (<span class="highlight">2</span> alive)</div>
+    <div class="line"><span class="ok">✓</span> <span class="highlight">2</span> open ports detected</div>
+    <div class="line"><span class="ok">✓</span> nuclei: <span class="highlight">2</span> findings (1 new)</div>
+    <div class="line"><span class="ok">✓</span> katana: <span class="highlight">15</span> endpoints crawled</div>
+    <div class="line"><span class="ok">✓</span> <span class="secret">1</span> potential secret discovered</div>
+    <div class="line"><span class="divider">────────────────────────────────────</span></div>
+    <div class="line"><span class="ok">✓</span> Results saved to bountyhunt.db</div>
+    <div class="line"> </div>
+    <div class="line"><span class="prompt">$</span> <span class="cmd">bountyhunt report --format html --output report.html</span></div>
+    <div class="line"><span class="ok">✓</span> Report generated: report.html</div>
+    <div class="line"> </div>
+    <div class="line"><span class="prompt">$</span> <span class="blink">▊</span></div>
+  </div>
+</div>
+</body>
+</html>

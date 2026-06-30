@@ -104,6 +104,16 @@ class Database:
             CREATE INDEX IF NOT EXISTS idx_findings_key ON findings(finding_key);
             CREATE INDEX IF NOT EXISTS idx_endpoints_host ON endpoints(host);
             CREATE INDEX IF NOT EXISTS idx_secrets_key ON secrets(finding_key);
+
+            CREATE TABLE IF NOT EXISTS checkpoints (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                target TEXT NOT NULL,
+                module TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'in_progress',
+                started_at TEXT NOT NULL,
+                completed_at TEXT,
+                UNIQUE(target, module)
+            );
         """)
         self.conn.commit()
 
@@ -467,6 +477,27 @@ class Database:
     def get_last_scan_timestamp(self) -> str | None:
         row = self.conn.execute("SELECT timestamp FROM scan_runs ORDER BY timestamp DESC LIMIT 1").fetchone()
         return row["timestamp"] if row else None
+
+    def save_checkpoint(self, target: str, module: str, status: str = "in_progress") -> None:
+        now = datetime.now(timezone.utc).isoformat()
+        self.conn.execute(
+            "INSERT INTO checkpoints (target, module, status, started_at) "
+            "VALUES (?, ?, ?, ?) ON CONFLICT(target, module) DO UPDATE SET "
+            "status = ?, started_at = CASE WHEN ? = 'in_progress' THEN ? ELSE started_at END, "
+            "completed_at = CASE WHEN ? = 'completed' THEN ? ELSE NULL END",
+            (target, module, status, now, status, status, now, status, now),
+        )
+        self.conn.commit()
+
+    def get_checkpoints(self, target: str) -> list[dict[str, Any]]:
+        rows = self.conn.execute(
+            "SELECT * FROM checkpoints WHERE target = ? ORDER BY started_at", (target,)
+        ).fetchall()
+        return [dict(r) for r in rows]
+
+    def clear_checkpoints(self, target: str) -> None:
+        self.conn.execute("DELETE FROM checkpoints WHERE target = ?", (target,))
+        self.conn.commit()
 
     def close(self) -> None:
         self.conn.close()

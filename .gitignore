@@ -10,6 +10,16 @@ build/
 
 # Reports (may contain redacted findings — never commit)
 reports/
+report.html
+
+# Sessions
+.session/
+
+# IDE / config
+.opencode/
+
+# Scope config (local overrides)
+scope.yaml
 
 # Environment
 .env

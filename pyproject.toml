@@ -4,12 +4,27 @@ build-backend = "hatchling.build"
 
 [project]
 name = "bountyhunt"
-version = "0.1.0"
+version = "1.1.0"
 description = "Automated recon and monitoring CLI for bug bounty programs"
 authors = [{name = "bess1lie"}]
 license = {text = "MIT"}
 readme = "README.md"
 requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Security",
+    "Topic :: System :: Monitoring",
+]
+keywords = ["bug-bounty", "recon", "security", "subfinder", "nuclei", "monitoring"]
 dependencies = [
     "typer>=0.9.0",
     "rich>=13.0.0",

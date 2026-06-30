@@ -7,6 +7,7 @@ import typer
 from rich import print as rprint
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.prompt import Confirm
 
 from bountyhunt import __author__, __version__
 from bountyhunt.core.db import Database
@@ -102,6 +103,11 @@ def scan(
         "--show-full-secrets",
         help="Store and display raw secret values (exposes credentials — use with caution)",
     ),
+    no_resume: bool = typer.Option(
+        False,
+        "--no-resume",
+        help="Ignore existing checkpoints and start fresh",
+    ),
     db_path: Path = typer.Option(
         Path("bountyhunt.db"),
         "--db",
@@ -120,26 +126,73 @@ def scan(
     db = Database(db_path)
     targets = [target] if target else scope.targets
 
+    completed = _check_resume(targets, db, no_resume)
     if all_mode:
-        _run_all_pipeline(scope, db, targets, rate, severity, include_intrusive, show_full_secrets)
+        _run_all_pipeline(scope, db, targets, rate, severity, include_intrusive, show_full_secrets, completed)
     else:
-        _run_recon_only(scope, db, targets)
+        _run_recon_only(scope, db, targets, completed)
 
     rprint(f"\n[green]✓[/green] Results saved to [bold]{db_path}[/bold]")
 
 
-def _run_recon_only(scope: Scope, db: Database, targets: List[str]) -> None:
+def _check_resume(targets: list[str], db: Database, no_resume: bool) -> set[str]:
+    """Check for existing checkpoints and ask user about resume.
+
+    Returns the set of modules that are already completed.
+    """
+    if no_resume:
+        return set()
+
+    completed = set()
+    for target in targets:
+        checkpoints = db.get_checkpoints(target)
+        if not checkpoints:
+            continue
+
+        completed_modules = {cp["module"] for cp in checkpoints if cp["status"] == "completed"}
+        in_progress = [cp["module"] for cp in checkpoints if cp["status"] == "in_progress"]
+
+        if completed_modules or in_progress:
+            rprint(f"\n[bold]⚡ Found checkpoint for:[/bold] {target}")
+            if completed_modules:
+                rprint(f"  [green]Completed:[/green] {', '.join(sorted(completed_modules))}")
+            if in_progress:
+                rprint(f"  [yellow]In progress:[/yellow] {', '.join(in_progress)}")
+
+            last_cp = max(checkpoints, key=lambda c: c["started_at"])
+            rprint(f"  [dim]Last checkpoint: {last_cp['started_at']}[/dim]")
+
+            if Confirm.ask("Resume from last checkpoint?", default=True):
+                completed.update(completed_modules)
+                continue
+
+        db.clear_checkpoints(target)
+
+    return completed
+
+
+def _run_recon_only(scope: Scope, db: Database, targets: List[str], completed: set[str] | None = None) -> None:
     """Run recon pipeline (subfinder → dnsx → httpx)."""
+    module = "recon"
+    if completed and module in completed:
+        rprint("[green]✓ Recon already completed, skipping.[/green]")
+        return
+
     all_hosts: list[dict] = []
     for t in targets:
+        db.save_checkpoint(t, module, "in_progress")
         pipeline = ReconPipeline(scope, db)
         hosts = pipeline.run(t)
         all_hosts.extend(hosts)
+        db.save_checkpoint(t, module, "completed")
 
     if all_hosts:
         ReconPipeline(scope, db).display_results(all_hosts)
     else:
         rprint("[yellow]No hosts found or all out of scope.[/yellow]")
+
+    for t in targets:
+        db.clear_checkpoints(t)
 
 
 def _run_all_pipeline(
@@ -150,6 +203,7 @@ def _run_all_pipeline(
     severity: str,
     include_intrusive: bool,
     show_full_secrets: bool,
+    completed: set[str] | None = None,
 ) -> None:
     """Full pipeline: recon → portscan → content → secrets → nuclei → tech.
 
@@ -160,15 +214,24 @@ def _run_all_pipeline(
     Step 5 — nuclei vulnerability scan.
     Step 6 — display technology summary.
     """
+    completed = completed or set()
     all_hosts: list[dict] = []
 
     # Step 1: recon
-    with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), console=console) as p:
-        p.add_task("Recon: subfinder → dnsx → httpx...", total=None)
+    if "recon" not in completed:
+        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), console=console) as p:
+            p.add_task("Recon: subfinder → dnsx → httpx...", total=None)
+            for t in targets:
+                db.save_checkpoint(t, "recon", "in_progress")
+                pipeline = ReconPipeline(scope, db)
+                hosts = pipeline.run(t)
+                all_hosts.extend(hosts)
+                db.save_checkpoint(t, "recon", "completed")
+    else:
+        rprint("[green]✓ Recon already completed, resuming from portscan.[/green]")
+        # Load existing hosts from DB
         for t in targets:
-            pipeline = ReconPipeline(scope, db)
-            hosts = pipeline.run(t)
-            all_hosts.extend(hosts)
+            all_hosts.extend(db.get_hosts_for_target_since(t, "1970-01-01"))
 
     if not all_hosts:
         rprint("[yellow]No hosts found during recon, skipping remaining steps.[/yellow]")
@@ -178,75 +241,109 @@ def _run_all_pipeline(
     ReconPipeline(scope, db).display_results(all_hosts)
 
     # Step 2: port scan + httpx probing
-    resolved = [{"domain": h["domain"], "ip": h.get("ip", "")} for h in all_hosts if h.get("ip")]
-    port_scan_run_id = db.save_scan_run("portscan", ",".join(targets))
-    port_scan = PortScanPipeline(scope, db, rate=rate)
-    ports = port_scan.run(resolved, port_scan_run_id)
+    ports = []
+    if "portscan" not in completed:
+        for t in targets:
+            db.save_checkpoint(t, "portscan", "in_progress")
+        resolved = [{"domain": h["domain"], "ip": h.get("ip", "")} for h in all_hosts if h.get("ip")]
+        port_scan_run_id = db.save_scan_run("portscan", ",".join(targets))
+        port_scan = PortScanPipeline(scope, db, rate=rate)
+        ports = port_scan.run(resolved, port_scan_run_id)
 
-    if ports:
-        rprint(f"[cyan]  → {len(ports)} open ports found, probing with httpx...[/cyan]")
-        port_urls = PortScanPipeline.to_urls(ports)
-        pipeline = ReconPipeline(scope, db)
-        extra_hosts = pipeline._run_httpx(
-            [{"domain": u, "ip": ""} for u in port_urls],
-            port_scan_run_id,
-        )
-        pipeline._save_results(extra_hosts, port_scan_run_id)
-        all_hosts.extend(extra_hosts)
-        if extra_hosts:
-            rprint(f"[green]  → {len(extra_hosts)} additional web services found via port probing[/green]")
+        if ports:
+            rprint(f"[cyan]  → {len(ports)} open ports found, probing with httpx...[/cyan]")
+            port_urls = PortScanPipeline.to_urls(ports)
+            pipeline = ReconPipeline(scope, db)
+            extra_hosts = pipeline._run_httpx(
+                [{"domain": u, "ip": ""} for u in port_urls],
+                port_scan_run_id,
+            )
+            pipeline._save_results(extra_hosts, port_scan_run_id)
+            all_hosts.extend(extra_hosts)
+            if extra_hosts:
+                rprint(f"[green]  → {len(extra_hosts)} additional web services found via port probing[/green]")
+        for t in targets:
+            db.save_checkpoint(t, "portscan", "completed")
+    else:
+        rprint("[green]✓ Portscan already completed, skipping.[/green]")
 
     # Step 3: content crawling via katana
-    content = ContentPipeline(scope, db)
-    content_run_id = db.save_scan_run("content", ",".join(targets))
-    content_targets = list({h["domain"] for h in all_hosts if scope.can_scan(h["domain"])})
-    if ports:
-        content_targets.extend(PortScanPipeline.to_urls(ports))
+    endpoints = []
+    if "content" not in completed:
+        for t in targets:
+            db.save_checkpoint(t, "content", "in_progress")
+        content = ContentPipeline(scope, db)
+        content_run_id = db.save_scan_run("content", ",".join(targets))
+        content_targets = list({h["domain"] for h in all_hosts if scope.can_scan(h["domain"])})
+        if ports:
+            content_targets.extend(PortScanPipeline.to_urls(ports))
 
-    endpoints = content.run(content_targets, content_run_id)
-    if endpoints:
-        new_count = sum(1 for e in endpoints if e["new"])
-        rprint(f"  [cyan]→ {len(endpoints)} endpoints ({new_count} new) discovered[/cyan]")
+        endpoints = content.run(content_targets, content_run_id)
+        if endpoints:
+            new_count = sum(1 for e in endpoints if e["new"])
+            rprint(f"  [cyan]→ {len(endpoints)} endpoints ({new_count} new) discovered[/cyan]")
+        for t in targets:
+            db.save_checkpoint(t, "content", "completed")
+    else:
+        rprint("[green]✓ Content scan already completed, skipping.[/green]")
 
     # Step 4: secret scanning on discovered endpoints
-    if endpoints:
-        secrets_pipeline = SecretsPipeline(db, store_raw=show_full_secrets)
-        secrets_run_id = db.save_scan_run("secrets", ",".join(targets))
-        secrets_found = secrets_pipeline.run(endpoints, secrets_run_id)
-        if secrets_found:
-            new_count = sum(1 for s in secrets_found if s["new"])
-            rprint(f"  [cyan]→ {len(secrets_found)} potential secrets ({new_count} new)[/cyan]")
-            rprint("  [yellow]  ⚠  Review before sharing reports.[/yellow]")
+    if "secrets" not in completed:
+        for t in targets:
+            db.save_checkpoint(t, "secrets", "in_progress")
+        if endpoints:
+            secrets_pipeline = SecretsPipeline(db, store_raw=show_full_secrets)
+            secrets_run_id = db.save_scan_run("secrets", ",".join(targets))
+            secrets_found = secrets_pipeline.run(endpoints, secrets_run_id)
+            if secrets_found:
+                new_count = sum(1 for s in secrets_found if s["new"])
+                rprint(f"  [cyan]→ {len(secrets_found)} potential secrets ({new_count} new)[/cyan]")
+                rprint("  [yellow]  ⚠  Review before sharing reports.[/yellow]")
+            else:
+                rprint("  [cyan]→ secrets: no matches[/cyan]")
         else:
-            rprint("  [cyan]→ secrets: no matches[/cyan]")
+            rprint("  [yellow]  No endpoints to scan for secrets.[/yellow]")
+        for t in targets:
+            db.save_checkpoint(t, "secrets", "completed")
     else:
-        rprint("  [yellow]  No endpoints to scan for secrets.[/yellow]")
+        rprint("[green]✓ Secrets scan already completed, skipping.[/green]")
 
     # Step 5: nuclei
-    exclude_tags = None if include_intrusive else ["dos", "fuzz", "intrusive"]
-    nuclei = NucleiPipeline(scope, db, severity=severity, exclude_tags=exclude_tags)
-    nuclei_run_id = db.save_scan_run("nuclei", ",".join(targets))
+    if "nuclei" not in completed:
+        for t in targets:
+            db.save_checkpoint(t, "nuclei", "in_progress")
+        exclude_tags = None if include_intrusive else ["dos", "fuzz", "intrusive"]
+        nuclei = NucleiPipeline(scope, db, severity=severity, exclude_tags=exclude_tags)
+        nuclei_run_id = db.save_scan_run("nuclei", ",".join(targets))
 
-    nuclei_targets = list({h["domain"] for h in all_hosts if scope.can_scan(h["domain"])})
-    if ports:
-        nuclei_targets.extend(PortScanPipeline.to_urls(ports))
+        nuclei_targets = list({h["domain"] for h in all_hosts if scope.can_scan(h["domain"])})
+        if ports:
+            nuclei_targets.extend(PortScanPipeline.to_urls(ports))
 
-    findings = nuclei.run(nuclei_targets, nuclei_run_id)
+        findings = nuclei.run(nuclei_targets, nuclei_run_id)
 
-    if findings:
-        counts: dict = {}
-        for f in findings:
-            sev = (f["severity"] or "unknown").upper()
-            counts[sev] = counts.get(sev, 0) + 1
-        tag = NucleiPipeline._format_severity_tag(counts)
-        new_count = sum(1 for f in findings if f["new"])
-        rprint(f"  [cyan]→ {len(findings)} total, {new_count} new findings:[/cyan] {tag}")
-        rprint("  [yellow]  ⚠  Manual verification required before reporting.[/yellow]")
+        if findings:
+            counts: dict = {}
+            for f in findings:
+                sev = (f["severity"] or "unknown").upper()
+                counts[sev] = counts.get(sev, 0) + 1
+            tag = NucleiPipeline._format_severity_tag(counts)
+            new_count = sum(1 for f in findings if f["new"])
+            rprint(f"  [cyan]→ {len(findings)} total, {new_count} new findings:[/cyan] {tag}")
+            rprint("  [yellow]  ⚠  Manual verification required before reporting.[/yellow]")
+        else:
+            rprint("  [cyan]→ nuclei: no findings[/cyan]")
+        for t in targets:
+            db.save_checkpoint(t, "nuclei", "completed")
     else:
-        rprint("  [cyan]→ nuclei: no findings[/cyan]")
+        rprint("[green]✓ Nuclei scan already completed, skipping.[/green]")
 
     # Step 6: tech summary (reads from DB, no network calls)
     display_tech_table(db)
+
+    # Clear checkpoints after successful completion
+    for t in targets:
+        db.clear_checkpoints(t)
 
 
 @app.command()
@@ -353,6 +450,11 @@ def monitor(
         "--show-full-secrets",
         help="Store raw secret values (exposes credentials — use with caution)",
     ),
+    no_resume: bool = typer.Option(
+        False,
+        "--no-resume",
+        help="Ignore existing checkpoints and start fresh",
+    ),
     db_path: Path = typer.Option(
         Path("bountyhunt.db"),
         "--db",
@@ -375,8 +477,10 @@ def monitor(
     db = Database(db_path)
     targets = [target] if target else scope.targets
 
+    completed = _check_resume(targets, db, no_resume)
+
     def _scan_and_save(s: Scope, d: Database, ts: List[str]) -> None:
-        _run_all_pipeline(s, d, ts, rate, severity, include_intrusive, show_full_secrets)
+        _run_all_pipeline(s, d, ts, rate, severity, include_intrusive, show_full_secrets, completed)
 
     for t in targets:
         rprint(f"\n[bold]Monitoring target:[/bold] {t}")

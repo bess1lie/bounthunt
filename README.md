@@ -49,6 +49,31 @@ $ bountyhunt monitor scope.yaml
   (second run: digests of new changes via Telegram/Discord)
 ```
 
+<details>
+<summary>📸 View sample HTML report and CLI help</summary>
+
+**CLI help:**
+```
+$ bountyhunt --version
+bountyhunt v1.1.0 — by bess1lie
+
+$ bountyhunt --help
+ Usage: bountyhunt [OPTIONS] COMMAND [ARGS]...
+
+ Automated recon and monitoring CLI for bug bounty programs
+
+╭─ Commands ───────────────────────────────────────────────────╮
+│ init     Create a template scope.yaml file.                  │
+│ scan     Run recon scan (subfinder → dnsx → httpx).          │
+│ report   Generate a report from scan results.                │
+│ monitor  Run full scan and send notifications.               │
+╰──────────────────────────────────────────────────────────────╯
+```
+
+**Sample HTML report:** `screenshots/report.html`
+**Sample Markdown report:** `screenshots/report.md`
+</details>
+
 ---
 
 ## Features

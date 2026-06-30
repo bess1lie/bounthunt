@@ -50,13 +50,9 @@ $ bountyhunt scan scope.yaml --all
 ✓ Results saved to bountyhunt.db
 ```
 
-**HTML Report Preview:**
-
-![Report Preview](screenshots/report-preview.png)
-
-[View sample HTML report](screenshots/report.html) · [View sample Markdown report](screenshots/report.md)
-
 ---
+
+
 
 ## Features
 

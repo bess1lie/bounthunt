@@ -1,7 +1,8 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Bountyhunt-1.1.0-58a6ff?style=for-the-badge">
   <img src="https://img.shields.io/github/actions/workflow/status/bess1lie/bounthunt/ci.yml?style=for-the-badge&logo=github&label=CI">
-  <img src="https://img.shields.io/badge/tests-1600+-brightgreen?style=for-the-badge&logo=pytest">
+  <img src="https://img.shields.io/badge/tests-91_cases- brightgreen?style=for-the-badge&logo=pytest">
+  <img src="https://img.shields.io/github/v/release/bess1lie/bounthunt?style=for-the-badge">
   <img src="https://img.shields.io/github/license/bess1lie/bounthunt?style=for-the-badge">
 </p>
 
@@ -53,7 +54,7 @@ $ bountyhunt monitor scope.yaml
 
 ## Why Bountyhunt?
 
-Running tools manually works — until you need to answer:
+Running ProjectDiscovery tools individually works — until you need to answer:
 
 | Question | Manual approach | With Bountyhunt |
 |----------|----------------|-----------------|
@@ -89,6 +90,41 @@ flowchart LR
 
 ---
 
+## Architecture
+
+```mermaid
+flowchart TD
+    CLI[CLI Entry] --> VAL[Scope Validation]
+    VAL -->|pass| RECON[Recon Pipeline]
+    VAL -->|fail| BLOCKED[❌ Blocked]
+    RECON --> DB[(SQLite)]
+    DB --> DIFF[Diff Engine]
+    DIFF --> REPORT[Report Generator]
+    DIFF --> NOTIFY[Notifications]
+    REPORT --> MD[Markdown]
+    REPORT --> HTML[HTML]
+    NOTIFY --> TG[Telegram]
+    NOTIFY --> DC[Discord]
+```
+
+---
+
+## Built With
+
+[![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)](https://python.org)
+[![Typer](https://img.shields.io/badge/Typer-CLI-333?logo=python)](https://typer.tiangolo.com)
+[![Rich](https://img.shields.io/badge/Rich-Terminal-333)](https://rich.readthedocs.io)
+[![SQLite](https://img.shields.io/badge/SQLite-DB-003B57?logo=sqlite)](https://sqlite.org)
+[![Jinja2](https://img.shields.io/badge/Jinja2-Reports-B41717?logo=jinja)](https://jinja.palletsprojects.com)
+[![pytest](https://img.shields.io/badge/pytest-tests-0A9EDC?logo=pytest)](https://pytest.org)
+
+| | |
+|---|---|
+| **91 tests** across all modules | **8 pipeline stages** from discovery to secrets |
+| **7 integrated tools** orchestrated | **SQLite** history with timestamps and dedup |
+
+---
+
 ## Features
 
 ### 🛡 Scope Guard
@@ -112,8 +148,8 @@ Interrupt a scan and resume from where you left off. No data loss, no redundant 
 ### 🐳 Docker
 Multi-stage Docker build bundles all Go tools. `docker compose up -d` for a 6-hour recurring scan loop.
 
-### 🧪 1600+ Tests
-Every pipeline stage, scope rule, and edge case is tested. CI enforces it on every commit.
+### 🧪 91 Automated Tests
+1,600+ lines of test code covering every pipeline stage, scope rule, and edge case. CI enforces it on every commit.
 
 ---
 
@@ -219,8 +255,9 @@ See [.env.example](.env.example).
 
 ---
 
-## Roadmap
+## Releases
 
+### v1.1 — Current
 - [x] Core recon pipeline (subfinder → dnsx → httpx)
 - [x] Port scanning (naabu) + tech detection
 - [x] Vulnerability scanning (nuclei) with safe defaults
@@ -229,6 +266,8 @@ See [.env.example](.env.example).
 - [x] HTML / Markdown reports with diff sections
 - [x] Docker deployment (multi-stage, docker-compose)
 - [x] Scan checkpoint / resume
+
+### Next
 - [ ] FastAPI live dashboard — real-time web UI
 - [ ] Custom notification templates
 - [ ] Batch mode — scan multiple scope files

@@ -1,10 +1,13 @@
 # Bountyhunt
 
-[![CI](https://github.com/bess1lie/bountyhunt/actions/workflows/ci.yml/badge.svg)](https://github.com/bess1lie/bountyhunt/actions/workflows/ci.yml)
+[![CI](https://github.com/bess1lie/bounthunt/actions/workflows/ci.yml/badge.svg)](https://github.com/bess1lie/bounthunt/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 
 > Automated recon and monitoring CLI for bug bounty programs.
+
+> **Sister project:** [gqlhunter](https://github.com/bess1lie/gqlhunter) — GraphQL recon & analysis CLI.
+> Same philosophy: **detection-only, no auto-exploitation.** Different domain: web recon → GraphQL API testing.
 
 **Bountyhunt** is a CLI orchestrator that automates the routine of bug bounty recon:
 subdomain discovery → host probing → port scanning → vulnerability detection →

@@ -1,14 +1,13 @@
-# Bountyhunt v1.0.0 — Release Notes
+# Bountyhunt v1.1.0 — Release Notes
 
 ## Repository Structure
 
 ```
 bountyhunt/
 ├── bountyhunt/
-│   ├── __init__.py          # Package metadata (v0.1.0, bess1lie)
-│   ├── cli.py               # Typer CLI: init, scan, monitor, report, --version
+│   ├── __init__.py          # Package metadata (v1.1.0, bess1lie)
 │   ├── core/
-│   │   ├── db.py            # SQLite: 6 tables, CRUD, per-target diff, redact_secret()
+│   │   ├── db.py            # SQLite: 7 tables (+checkpoints), CRUD, per-target diff, redact
 │   │   ├── runner.py        # subprocess wrapper: run_tool(), CheckTool, ToolNotFound/Timeout
 │   │   └── scope.py         # YAML allow/deny, is_in_scope(), can_scan(), targets
 │   ├── modules/
@@ -22,18 +21,7 @@ bountyhunt/
 │   │   └── notify.py        # DiffSummary dataclass, format_digest(), send_digest()
 │   └── report/
 │       └── render.py        # Jinja2 Markdown/HTML report with diff section
-├── tests/
-│   ├── test_scope.py        # 13 tests
-│   ├── test_db.py           # 12 tests
-│   ├── test_recon.py        # 5 tests
-│   ├── test_portscan.py     # 4 tests
-│   ├── test_techdetect.py   # 4 tests
-│   ├── test_vuln.py         # 9 tests
-│   ├── test_content.py      # 6 tests
-│   ├── test_secrets.py      # 12 tests
-│   ├── test_notify.py       # 12 tests
-│   ├── test_monitor.py      # 5 tests
-│   └── test_report_render.py # 8 tests
+├── tests/                   # 90+ tests across all modules
 ├── Dockerfile               # Multi-stage: Go tools + Python runtime
 ├── docker-compose.yml       # Cron-like scan loop with volume mounts
 ├── .env.example             # Notification channel documentation
@@ -45,19 +33,39 @@ bountyhunt/
 └── README.md
 ```
 
-## Architecture Overview
+## What's New in v1.1.0
+
+### Scan Checkpoint / Resume
+
+Long scans can now be **interrupted and resumed**. The pipeline saves checkpoints
+after each stage (recon, portscan, content, secrets, nuclei). On restart:
+
+1. `bountyhunt` detects existing checkpoints in the DB
+2. Prompts: *"Resume from last checkpoint?"*
+3. Skips completed stages, picks up where it left off
+
+Use `--no-resume` to ignore checkpoints and run the full pipeline from scratch.
 
 ```
-User → CLI (Typer) → Scope Guard → Pipeline Orchestrator → External Tools
-                                      ├── recon:    subfinder → dnsx → httpx
-                                      ├── portscan: naabu → httpx (port probe)
-                                      ├── vuln:     nuclei (with dedup)
-                                      ├── content:  katana (per-URL scope guard)
-                                      └── secrets:  regex patterns (redaction)
-                                      ↓
-                                    SQLite ← Diff Engine → Report (Jinja2)
-                                                         → Notifications (TG/Discord)
+$ bountyhunt scan scope.yaml --all
+→ Running full pipeline...
+
+# (interrupted after recon — Ctrl+C)
+
+$ bountyhunt scan scope.yaml --all
+⚡ Found checkpoint for: example.com
+  Completed: recon
+Resume from last checkpoint? [Y/n]: y
+✓ Recon already completed, resuming from portscan.
+→ naabu → httpx → nuclei → katana → secrets
 ```
+
+### Implementation
+
+- **checkpoints** table in SQLite with UNIQUE(target, module)
+- `save_checkpoint()` / `get_checkpoints()` / `clear_checkpoints()` in Database
+- Prompt via `rich.prompt.Confirm`
+- Applied to both `scan` (standalone) and `monitor` (cron) modes
 
 ## CLI Commands
 
@@ -69,6 +77,12 @@ User → CLI (Typer) → Scope Guard → Pipeline Orchestrator → External Tool
 | `bountyhunt report` | Markdown/HTML report generation |
 | `bountyhunt --version` | Show version |
 
+### New Flags
+
+| Flag | Applies to | Description |
+|------|-----------|-------------|
+| `--no-resume` | scan, monitor | Ignore checkpoints, start fresh |
+
 ## Database Schema (SQLite)
 
 - **scan_runs** — id, timestamp, module, target, status
@@ -77,6 +91,7 @@ User → CLI (Typer) → Scope Guard → Pipeline Orchestrator → External Tool
 - **findings** — id, finding_key (UNIQUE), host, template_id, name, severity, matched_at, scan_run_id
 - **endpoints** — id, url (UNIQUE), host, status_code, content_length, content_type, scan_run_id
 - **secrets** — id, finding_key (UNIQUE), host, url, pattern_type, redacted, raw_value, scan_run_id
+- **checkpoints** — target, module, status, started_at, completed_at (UNIQUE: target+module)
 
 ## Security Features
 
@@ -87,84 +102,16 @@ User → CLI (Typer) → Scope Guard → Pipeline Orchestrator → External Tool
 5. **Rate limiting** — naabu rate param (100 pps default), respect Retry-After
 6. **Ethics disclaimer** — README explicitly warns about authorised use only
 
-## Testing Coverage (91 tests)
+## Additional Improvements
 
-| Module | Tests | Coverage |
-|--------|-------|----------|
-| scope | 17 | Exact/wildcard/deny/can_scan/targets/case_insensitive/mixed/deny_wildcard |
-| db | 9 | Init/CRUD/upsert/scan_runs/hosts_since/port_ops/per-target |
-| recon | 5 | Mock pipeline/OOS filter/graceful degradation |
-| portscan | 4 | Scope filter/empty input/to_urls |
-| techdetect | 4 | Dedup/empty DB/categorisation/JSON strings |
-| vuln | 9 | OOS filter/dedup/default tags/can_scan/severity CLI/exclude-tags CLI |
-| content | 6 | Per-URL filter/empty input/OOS targets/dedup/malformed JSON |
-| secrets | 12 | Redact logic (aws/jwt/generic) + patterns (8) + dedup + store_raw |
-| notify | 12 | Baseline/no-changes/hosts/findings/secrets/endpoints/truncation/channels/redaction |
-| monitor | 5 | Baseline/second-run hosts/findings/redaction/no-changes |
-| report_render | 8 | Baseline/no-changes/hosts/findings/secrets/endpoints/ports/None |
-
-## Code Quality
-
-- Ruff: clean (E, F, I, N, W rules)
-- Ruff format: clean (120 char line length)
-- Python 3.11+ with full type annotations
-- All exceptions properly typed (ToolNotFoundError, ToolTimeoutError)
-- Consistent logging via `logging.getLogger(__name__)`
-
-## Roadmap (Future)
-
-- FastAPI live dashboard (real-time web UI)
-- Notification templates (customisable formatting)
-- Webhook integration tests
-
-## Screenshots
-
-Screenshots are in the `screenshots/` directory:
-
-- `report.html` — Generated HTML report in browser
-- `report.md` — Generated Markdown report
-- `cli-help.txt` — CLI --help and typical usage output
-
-### Quick preview
-
-**HTML report:** open `screenshots/report.html` in any browser.
-
-**CLI usage:**
-```
-$ bountyhunt --version
-bountyhunt v0.1.0 — by bess1lie
-
-$ bountyhunt scan scope.yaml --all
-→ Starting recon for: example.com
-  • subfinder → 12 subdomains
-  • dnsx → 8 resolved
-  • httpx → 5 alive (200/30x)
-  • naabu → 3 open ports
-  • nuclei → 2 findings (1 new)
-  • katana → 15 endpoints (3 new)
-  • secrets → 1 potential secret (1 new)
-✓ Results saved to bountyhunt.db
-```
-
-## Validation
-
-Clean-room validation performed:
-
-- ✅ `pip install -e ".[dev]"` — installs all dependencies
-- ✅ `bountyhunt --version` — outputs correct version string
-- ✅ `bountyhunt --help` — shows all 4 commands
-- ✅ `bountyhunt init` — creates valid scope.yaml
-- ✅ `bountyhunt scan` — graceful tool-not-found error (no crash)
-- ✅ `bountyhunt report` — generates Markdown + HTML with diff section
-- ✅ `pytest` — 91 tests pass
-- ✅ `ruff check .` — clean
-- ✅ `ruff format --check .` — clean
-- ✅ Docker — multi-stage build, compose volumes, cron-ready loop
+- Version bumped to 1.1.0
+- PyPI classifiers and keywords added to `pyproject.toml`
+- `.session/`, `.opencode/`, `report.html`, `scope.yaml` added to `.gitignore`
 
 ## Version
 
 ```text
-bountyhunt v1.0.0 — by bess1lie
+bountyhunt v1.1.0 — by bess1lie
 ```
 
-Recommended tag: `v1.0.0`
+Recommended tag: `v1.1.0`

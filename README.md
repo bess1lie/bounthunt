@@ -1,34 +1,66 @@
-# Bountyhunt
+# 🏴 Bountyhunt
 
 [![CI](https://github.com/bess1lie/bounthunt/actions/workflows/ci.yml/badge.svg)](https://github.com/bess1lie/bounthunt/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+[![Tests](https://img.shields.io/badge/tests-1600+_lines-green)](tests/)
+[![Last commit](https://img.shields.io/github/last-commit/bess1lie/bounthunt)](https://github.com/bess1lie/bounthunt/commits/main)
+[![Languages](https://img.shields.io/github/languages/top/bess1lie/bounthunt)](https://github.com/bess1lie/bounthunt)
 
-> Automated recon and monitoring CLI for bug bounty programs.
+> Automated recon & monitoring CLI for bug bounty programs.
 
 > **Sister project:** [gqlhunter](https://github.com/bess1lie/gqlhunter) — GraphQL recon & analysis CLI.
-> Same philosophy: **detection-only, no auto-exploitation.** Different domain: web recon → GraphQL API testing.
 
-**Bountyhunt** is a CLI orchestrator that automates the routine of bug bounty recon:
-subdomain discovery → host probing → port scanning → vulnerability detection →
-change monitoring → reporting.
+---
 
-It doesn't reinvent scanning. Instead, it **orchestrates** battle-tested tools
-(`subfinder`, `dnsx`, `httpx`, `naabu`, `nuclei`, `katana`), stores results in
-SQLite with full history, and provides **diff-based monitoring** — you see
-exactly what changed since the last scan.
+## Why Bountyhunt?
 
-## Key Features
+Running subfinder, dnsx, httpx, naabu, nuclei, katana **manually** every day is tedious.
+Bountyhunt chains them into one command, stores everything in SQLite, and tells you
+**what changed** since the last scan — no more comparing terminal dumps.
+
+```
+before: 6 tools × N targets × daily = hours of manual work
+after:  bountyhunt scan scope.yaml --all → done in one command
+```
+
+---
+
+## Demo
+
+```bash
+$ bountyhunt scan scope.yaml --all
+
+→ Starting full pipeline for: example.com
+  • subfinder → 12 subdomains
+  • dnsx → 8 resolved
+  • httpx → 5 alive (200/30x)
+  • naabu → 3 open ports
+  • nuclei → 2 findings (1 new)
+  • katana → 15 endpoints (3 new)
+  • secrets → 1 potential secret (1 new)
+✓ Results saved to bountyhunt.db
+
+$ bountyhunt report --output report.html --format html
+✓ Report generated: report.html
+
+$ bountyhunt monitor scope.yaml
+  (first run: silent baseline)
+  (second run: digests of new changes via Telegram/Discord)
+```
+
+---
+
+## Features
 
 - **Orchestration pipeline** — subfinder → dnsx → httpx → naabu → nuclei →
   content discovery, all in one command
 - **Scope guard** — every active scan is validated against a YAML allow/deny
-  list. No accidental out-of-scope scanning.
+  list
 - **SQLite storage** — full history of findings with timestamps
-- **Diff monitoring** — compare current results with previous scans; see new
-  hosts, ports, or tech
+- **Checkpoint/resume** — interrupted scans pick up where they left off
+- **Diff monitoring** — see exactly what changed since the last scan
 - **Notifications** — Telegram/Discord webhook alerts for new findings
-  (optional)
 - **Reports** — Markdown/HTML report generation with Jinja2
 
 ## Architecture
@@ -124,6 +156,7 @@ Run recon pipeline (subfinder → dnsx → httpx).
 | `--severity`, `-s` | low,medium,high,critical | Nuclei severity filter |
 | `--include-intrusive` | false | Enable dos/fuzz/intrusive nuclei templates |
 | `--show-full-secrets` | false | Store raw secret values (use with caution) |
+| `--no-resume` | false | Ignore existing checkpoints and start fresh |
 | `--db` | bountyhunt.db | SQLite database path |
 
 ### `bountyhunt monitor <scope.yaml>`
@@ -150,7 +183,7 @@ Generate a Markdown or HTML report from scan results.
 ### `bountyhunt --version`
 
 ```text
-bountyhunt v0.1.0 — by bess1lie
+bountyhunt v1.1.0 — by bess1lie
 ```
 
 ## Example scope.yaml
@@ -175,6 +208,7 @@ deny:
 - [x] **Stage 5** — Diff-based monitoring, Telegram/Discord notifications, first-run baseline
 - [x] **Stage 6** — Static reports with diff section (HTML/Markdown)
 - [x] **Stage 7** — Docker deployment (multi-stage build, docker-compose)
+- [x] **Stage 8** — Scan checkpoint/resume (`--no-resume`) with SQLite-based state tracking
 - [ ] **FastAPI live dashboard** *(planned)* — Real-time web UI with scan history,
       per-target filtering, and drill-down into findings and secrets
 - [ ] **Notification templates** *(planned)* — Customisable message formatting

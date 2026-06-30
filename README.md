@@ -1,122 +1,102 @@
-# 🏴 Bountyhunt
+# Bountyhunt
 
 [![CI](https://github.com/bess1lie/bounthunt/actions/workflows/ci.yml/badge.svg)](https://github.com/bess1lie/bounthunt/actions/workflows/ci.yml)
+[![Tests](https://img.shields.io/badge/tests-1600+-green.svg)](https://github.com/bess1lie/bounthunt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Tests](https://img.shields.io/badge/tests-1600+_lines-green)](tests/)
-[![Last commit](https://img.shields.io/github/last-commit/bess1lie/bounthunt)](https://github.com/bess1lie/bounthunt/commits/main)
-[![Languages](https://img.shields.io/github/languages/top/bess1lie/bounthunt)](https://github.com/bess1lie/bounthunt)
+[![Last Commit](https://img.shields.io/github/last-commit/bess1lie/bounthunt)](https://github.com/bess1lie/bounthunt)
+[![Python](https://img.shields.io/github/languages/top/bess1lie/bounthunt)](https://github.com/bess1lie/bounthunt)
 
-> Automated recon & monitoring CLI for bug bounty programs.
+> Automated recon and monitoring CLI for bug bounty programs.
 
 > **Sister project:** [gqlhunter](https://github.com/bess1lie/gqlhunter) — GraphQL recon & analysis CLI.
 
 ---
 
-## Why Bountyhunt?
+## Quick example
 
-Running subfinder, dnsx, httpx, naabu, nuclei, katana **manually** every day is tedious.
-Bountyhunt chains them into one command, stores everything in SQLite, and tells you
-**what changed** since the last scan — no more comparing terminal dumps.
+```bash
+# Full recon pipeline — one command
+bountyhunt scan scope.yaml --all
 
-```
-before: 6 tools × N targets × daily = hours of manual work
-after:  bountyhunt scan scope.yaml --all → done in one command
+# Monitor for changes (cron-ready)
+bountyhunt monitor scope.yaml
+
+# Generate HTML report with findings
+bountyhunt report --format html --output report.html
 ```
 
 ---
 
 ## Demo
 
-```bash
+```text
 $ bountyhunt scan scope.yaml --all
-
 → Starting full pipeline for: example.com
-  • subfinder → 12 subdomains
-  • dnsx → 8 resolved
-  • httpx → 5 alive (200/30x)
-  • naabu → 3 open ports
-  • nuclei → 2 findings (1 new)
-  • katana → 15 endpoints (3 new)
-  • secrets → 1 potential secret (1 new)
+  • subfinder — subdomain discovery
+  • dnsx — DNS resolution
+  • httpx — host probing
+  • naabu — port scanning
+  • nuclei — vulnerability detection
+  • katana — content crawling
+  • secrets — secret discovery
+────────────────────────────────────
+✓ 3 hosts found (2 alive)
+✓ 2 open ports detected
+✓ nuclei: 2 findings (1 new)
+✓ katana: 15 endpoints crawled
+✓ 1 potential secret discovered
+────────────────────────────────────
 ✓ Results saved to bountyhunt.db
-
-$ bountyhunt report --output report.html --format html
-✓ Report generated: report.html
-
-$ bountyhunt monitor scope.yaml
-  (first run: silent baseline)
-  (second run: digests of new changes via Telegram/Discord)
 ```
 
-<details>
-<summary>📸 View sample HTML report and CLI help</summary>
+**HTML Report Preview:**
 
-**CLI help:**
-```
-$ bountyhunt --version
-bountyhunt v1.1.0 — by bess1lie
+![Report Preview](screenshots/report-preview.png)
 
-$ bountyhunt --help
- Usage: bountyhunt [OPTIONS] COMMAND [ARGS]...
-
- Automated recon and monitoring CLI for bug bounty programs
-
-╭─ Commands ───────────────────────────────────────────────────╮
-│ init     Create a template scope.yaml file.                  │
-│ scan     Run recon scan (subfinder → dnsx → httpx).          │
-│ report   Generate a report from scan results.                │
-│ monitor  Run full scan and send notifications.               │
-╰──────────────────────────────────────────────────────────────╯
-```
-
-**Sample HTML report:** `screenshots/report.html`
-**Sample Markdown report:** `screenshots/report.md`
-</details>
+[View sample HTML report](screenshots/report.html) · [View sample Markdown report](screenshots/report.md)
 
 ---
 
 ## Features
 
-- **Orchestration pipeline** — subfinder → dnsx → httpx → naabu → nuclei →
-  content discovery, all in one command
-- **Scope guard** — every active scan is validated against a YAML allow/deny
-  list
-- **SQLite storage** — full history of findings with timestamps
-- **Checkpoint/resume** — interrupted scans pick up where they left off
-- **Diff monitoring** — see exactly what changed since the last scan
-- **Notifications** — Telegram/Discord webhook alerts for new findings
-- **Reports** — Markdown/HTML report generation with Jinja2
+| Domain | Feature |
+|--------|---------|
+| 🔍 **Recon** | Subfinder → dnsx → httpx pipeline with scope validation |
+| 🛡 **Scope Guard** | YAML allow/deny — no accidental out-of-scope scanning |
+| 💾 **Storage** | Full SQLite history with timestamps, dedup, and redaction |
+| 🔄 **Diff Monitoring** | Compare scans — see new hosts, ports, findings, secrets |
+| 📬 **Notifications** | Telegram / Discord webhook alerts (optional) |
+| 📊 **Reports** | Markdown & HTML via Jinja2 with diff sections |
+| 🐳 **Docker** | Multi-stage build, docker-compose, cron-ready |
+| ⏯ **Checkpoint/Resume** | Interrupt and resume scans without data loss |
+| 🧪 **Tested** | 1600+ lines of tests across all modules |
 
-## Architecture
+---
 
-```mermaid
-graph LR
-    A[User] --> B[bountyhunt CLI]
-    B --> C{Scope Guard}
-    C -->|in scope| D[subfinder]
-    D --> E[dnsx]
-    E --> F[httpx]
-    F --> G[naabu]
-    G --> H[nuclei]
-    H --> I[katana]
-    I --> J[(SQLite)]
-    J --> K[Diff Engine]
-    K --> L[Report]
-    K --> M[Notifications]
-    C -->|OOS| N[BLOCKED]
-```
+## Why Bountyhunt?
+
+Running `subfinder | dnsx | httpx | naabu | nuclei | katana` manually works — until you need to:
+
+- **Track changes** — what's new since last week's scan?
+- **Stay in scope** — one wrong domain and you've violated program rules
+- **Store history** — finding disappeared? Check if it ever existed
+- **Share results** — non-technical stakeholders need a report, not a terminal buffer
+
+Bountyhunt solves all of this. It's not a new scanner — it's an **orchestrator** that adds persistence, discipline, and accountability to the tools you already use.
+
+---
 
 ## Ethics & Disclaimer
 
-> **Important:** Bountyhunt is designed exclusively for **authorized bug bounty
-> programs**. You must only scan targets explicitly listed in your scope file.
-> The scope guard is a safety measure, not a legal shield.
+> Bountyhunt is designed exclusively for **authorized bug bounty programs**. You must only scan targets explicitly listed in your scope file. The scope guard is a safety measure, not a legal shield.
 
 - Always ensure you have written authorization before scanning any target.
 - Respect rate limits and `Retry-After` headers.
 - This tool performs **detection only** — no automatic exploitation.
 - The author is not responsible for misuse of this tool.
+
+---
 
 ## Quick Start
 
@@ -124,44 +104,30 @@ graph LR
 
 - Python 3.11+
 - Go-based recon tools (installed automatically in Docker):
-  - [subfinder](https://github.com/projectdiscovery/subfinder)
-  - [dnsx](https://github.com/projectdiscovery/dnsx)
-  - [httpx](https://github.com/projectdiscovery/httpx)
-  - [naabu](https://github.com/projectdiscovery/naabu)
-  - [nuclei](https://github.com/projectdiscovery/nuclei)
-  - [katana](https://github.com/projectdiscovery/katana)
+  - [subfinder](https://github.com/projectdiscovery/subfinder) · [dnsx](https://github.com/projectdiscovery/dnsx) · [httpx](https://github.com/projectdiscovery/httpx)
+  - [naabu](https://github.com/projectdiscovery/naabu) · [nuclei](https://github.com/projectdiscovery/nuclei) · [katana](https://github.com/projectdiscovery/katana)
 
 ### Install from source
 
 ```bash
-# Create and activate a virtual environment (recommended)
-python -m venv .venv
-source .venv/bin/activate
-
-# Install Python package
+python -m venv .venv && source .venv/bin/activate
 pip install .
 
-# Initialise a scope file
 bountyhunt init scope.yaml
-
-# Edit scope.yaml with your targets, then run a full scan
+# Edit scope.yaml with your targets, then:
 bountyhunt scan scope.yaml --all
 ```
 
 ### Docker
 
 ```bash
-# Build the image (includes all Go tools)
 docker compose build
-
-# Run an ad-hoc scan
 docker compose run --rm bountyhunt scan /data/scope.yaml --all
-
-# Or run in monitoring loop (scans every 6h)
+# Or monitoring loop (scans every 6h):
 docker compose up -d
 ```
 
-See [docker-compose.yml](docker-compose.yml) for volume mount details.
+---
 
 ## Usage
 
@@ -188,11 +154,9 @@ Run recon pipeline (subfinder → dnsx → httpx).
 
 Run full scan and send notifications for new findings (cron-ready).
 
-Reads `DISCORD_WEBHOOK_URL`, `TELEGRAM_BOT_TOKEN`, and `TELEGRAM_CHAT_ID`
-from environment (see [.env.example](.env.example)).
+Reads `DISCORD_WEBHOOK_URL`, `TELEGRAM_BOT_TOKEN`, and `TELEGRAM_CHAT_ID` from environment (see [.env.example](.env.example)).
 
-First run establishes a silent baseline. Subsequent runs send a digest
-of new hosts, ports, findings, endpoints, and redacted secrets.
+First run establishes a silent baseline. Subsequent runs send a digest of new hosts, ports, findings, endpoints, and redacted secrets.
 
 ### `bountyhunt report`
 
@@ -211,6 +175,8 @@ Generate a Markdown or HTML report from scan results.
 bountyhunt v1.1.0 — by bess1lie
 ```
 
+---
+
 ## Example scope.yaml
 
 ```yaml
@@ -224,19 +190,16 @@ deny:
   - "old.example.net"
 ```
 
+---
+
 ## Roadmap
 
-- [x] **Stage 1** — Core: scope guard, DB, runner, recon pipeline (subfinder → dnsx → httpx)
-- [x] **Stage 2** — Port scanning (naabu), tech detection, httpx port probing
-- [x] **Stage 3** — Vulnerability scanning (nuclei) with safe defaults and dedup
-- [x] **Stage 4** — Content crawling (katana), secret discovery with redaction
-- [x] **Stage 5** — Diff-based monitoring, Telegram/Discord notifications, first-run baseline
-- [x] **Stage 6** — Static reports with diff section (HTML/Markdown)
-- [x] **Stage 7** — Docker deployment (multi-stage build, docker-compose)
-- [x] **Stage 8** — Scan checkpoint/resume (`--no-resume`) with SQLite-based state tracking
-- [ ] **FastAPI live dashboard** *(planned)* — Real-time web UI with scan history,
-      per-target filtering, and drill-down into findings and secrets
-- [ ] **Notification templates** *(planned)* — Customisable message formatting
+- [x] **Stage 1-8** — Core pipeline, scanning, monitoring, reports, Docker, checkpoint/resume
+- [ ] **FastAPI live dashboard** — Real-time web UI with scan history and drill-down
+- [ ] **Notification templates** — Customisable message formatting
+- [ ] **Batch mode** — Scan multiple scope files in sequence
+
+---
 
 ## Author
 

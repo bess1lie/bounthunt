@@ -1,9 +1,10 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Bountyhunt-1.1.0-58a6ff?style=for-the-badge">
   <img src="https://img.shields.io/github/actions/workflow/status/bess1lie/bounthunt/ci.yml?style=for-the-badge&logo=github&label=CI">
-  <img src="https://img.shields.io/badge/tests-91_cases- brightgreen?style=for-the-badge&logo=pytest">
+  <img src="https://img.shields.io/badge/tests-91_cases-brightgreen?style=for-the-badge&logo=pytest">
   <img src="https://img.shields.io/github/v/release/bess1lie/bounthunt?style=for-the-badge">
   <img src="https://img.shields.io/github/license/bess1lie/bounthunt?style=for-the-badge">
+  <img src="https://img.shields.io/github/languages/top/bess1lie/bounthunt?style=for-the-badge">
 </p>
 
 <p align="center">
@@ -20,35 +21,9 @@
   <i>Orchestrate · Monitor · Report — without leaving scope.</i>
 </p>
 
----
-
-## Demo
-
-```text
-$ bountyhunt scan scope.yaml --all
-→ Starting full pipeline for: example.com
-  • subfinder — subdomain discovery
-  • dnsx — DNS resolution
-  • httpx — host probing
-  • naabu — port scanning
-  • nuclei — vulnerability detection
-  • katana — content crawling
-  • secrets — secret discovery
-────────────────────────────────────
-✓ 3 hosts found (2 alive)
-✓ 2 open ports detected
-✓ nuclei: 2 findings (1 new)
-✓ katana: 15 endpoints crawled
-✓ 1 potential secret discovered
-────────────────────────────────────
-✓ Results saved to bountyhunt.db
-
-$ bountyhunt report --format html --output report.html
-✓ Report generated
-
-$ bountyhunt monitor scope.yaml
-✓ Baseline established — future runs will report changes
-```
+<p align="center">
+  <img src="screenshots/terminal.png" alt="Terminal demo" width="720">
+</p>
 
 ---
 
@@ -69,7 +44,7 @@ Bountyhunt is not a new scanner. It's an **orchestrator** that adds persistence,
 
 ---
 
-## Pipeline
+## Architecture
 
 ```mermaid
 flowchart LR
@@ -82,46 +57,17 @@ flowchart LR
     NC --> KT[katana]
     KT --> SC[secrets]
     SC --> DB[(SQLite)]
-    DB --> R[Report]
-    DB --> M[Monitor/Diff]
-    M --> N[Notifications]
+    DB --> DIFF[Diff Engine]
+    DIFF --> RPT[Report]
+    DIFF --> NOT[Notifications]
+    NOT --> TG[Telegram]
+    NOT --> DC[Discord]
     G -->|deny| X[❌ Blocked]
 ```
 
----
-
-## Architecture
-
-```mermaid
-flowchart TD
-    CLI[CLI Entry] --> VAL[Scope Validation]
-    VAL -->|pass| RECON[Recon Pipeline]
-    VAL -->|fail| BLOCKED[❌ Blocked]
-    RECON --> DB[(SQLite)]
-    DB --> DIFF[Diff Engine]
-    DIFF --> REPORT[Report Generator]
-    DIFF --> NOTIFY[Notifications]
-    REPORT --> MD[Markdown]
-    REPORT --> HTML[HTML]
-    NOTIFY --> TG[Telegram]
-    NOTIFY --> DC[Discord]
-```
-
----
-
-## Built With
-
-[![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)](https://python.org)
-[![Typer](https://img.shields.io/badge/Typer-CLI-333?logo=python)](https://typer.tiangolo.com)
-[![Rich](https://img.shields.io/badge/Rich-Terminal-333)](https://rich.readthedocs.io)
-[![SQLite](https://img.shields.io/badge/SQLite-DB-003B57?logo=sqlite)](https://sqlite.org)
-[![Jinja2](https://img.shields.io/badge/Jinja2-Reports-B41717?logo=jinja)](https://jinja.palletsprojects.com)
-[![pytest](https://img.shields.io/badge/pytest-tests-0A9EDC?logo=pytest)](https://pytest.org)
-
-| | |
-|---|---|
-| **91 tests** across all modules | **8 pipeline stages** from discovery to secrets |
-| **7 integrated tools** orchestrated | **SQLite** history with timestamps and dedup |
+| | | | |
+|---|---|---|---|
+| <b>91+</b><br>Tests | <b>8</b><br>Pipeline Stages | <b>7</b><br>Integrated Tools | <b>SQLite</b><br>Persistent Storage |
 
 ---
 
@@ -257,7 +203,7 @@ See [.env.example](.env.example).
 
 ## Releases
 
-### v1.1 — Current
+### What's included in v1.1
 - [x] Core recon pipeline (subfinder → dnsx → httpx)
 - [x] Port scanning (naabu) + tech detection
 - [x] Vulnerability scanning (nuclei) with safe defaults
@@ -276,16 +222,8 @@ See [.env.example](.env.example).
 
 ## Ethics
 
-> Designed exclusively for **authorized bug bounty programs**. Detection only — no exploitation. The scope guard is a safety measure, not a legal shield.
+> Designed exclusively for **authorized bug bounty programs**. Detection only — no exploitation.
 
 ---
 
-<p align="center">
-  <b>Bountyhunt</b> — built for responsible bug bounty research.<br>
-  <i>Detection only. No exploitation.</i>
-</p>
-
-<p align="center">
-  <a href="https://github.com/bess1lie">bess1lie</a> ·
-  <a href="LICENSE">MIT License</a>
-</p>
+<p align="center">Built for responsible security research. · <a href="LICENSE">MIT License</a> · <a href="https://github.com/bess1lie">bess1lie</a></p>

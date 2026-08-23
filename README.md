@@ -1,16 +1,14 @@
-# 🎯 bounthunt — Bug Bounty Recon & Orchestration
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/banner-dark.svg">
+  <img src="docs/banner-light.svg" alt="bounthunt — Bug Bounty Recon Orchestrator" width="100%">
+</picture>
 
-[![PyPI version](https://img.shields.io/pypi/v/bounthunt?color=blue&style=flat-square)](https://pypi.org/project/bounthunt/)
-[![Python version](https://img.shields.io/pypi/pyversions/bounthunt?style=flat-square)](https://pypi.org/project/bounthunt/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/bess1lie/bounthunt/ci.yml?branch=main&style=flat-square)](https://github.com/bess1lie/bounthunt/actions)
-[![Code Coverage](https://img.shields.io/badge/coverage-95%25-green?style=flat-square)](https://github.com/bess1lie/bounthunt)
-[![Style: Black](https://img.shields.io/badge/style-black-000000?style=flat-square)](https://github.com/psf/black)
-[![Type: Mypy](https://img.shields.io/badge/types-mypy-blue?style=flat-square)](http://mypy-lang.org/)
-[![Security: Bandit](https://img.shields.io/badge/security-bandit-yellow?style=flat-square)](https://github.com/PyCQA/bandit)
-[![Stars](https://img.shields.io/github/stars/bess1lie/bounthunt?style=flat-square)](https://github.com/bess1lie/bounthunt/stargazers)
-[![Issues](https://img.shields.io/github/issues/bess1lie/bounthunt?style=flat-square)](https://github.com/bess1lie/bounthunt/issues)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](https://github.com/bess1lie/bounthunt/pulls)
+[![Python](https://img.shields.io/badge/Python-3.11+-FAF9F6?style=flat-square&logo=python&logoColor=4F46E5&labelColor=FAF9F6)](https://pypi.org/project/bounthunt/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-FAF9F6?style=flat-square&labelColor=FAF9F6&color=E7E5E4)](https://opensource.org/licenses/MIT)
+[![Build](https://img.shields.io/github/actions/workflow/status/bess1lie/bounthunt/ci.yml?branch=main&style=flat-square&logo=github&labelColor=FAF9F6&color=4F46E5)](https://github.com/bess1lie/bounthunt/actions)
+[![Coverage](https://img.shields.io/badge/coverage-95%25-FAF9F6?style=flat-square&labelColor=FAF9F6&color=4F46E5)](https://github.com/bess1lie/bounthunt)
+[![Stars](https://img.shields.io/github/stars/bess1lie/bounthunt?style=flat-square&labelColor=FAF9F6&color=4F46E5)](https://github.com/bess1lie/bounthunt/stargazers)
+[![Downloads](https://img.shields.io/pypi/dm/bounthunt?style=flat-square&labelColor=FAF9F6&color=4F46E5)](https://pypi.org/project/bounthunt/)
 
 **Scope-aware recon orchestration for bug bounty programs.**
 

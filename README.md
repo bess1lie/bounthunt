@@ -1,16 +1,11 @@
 # 🎯 bounthunt — Bug Bounty Recon & Orchestration
 
-[![PyPI version](https://img.shields.io/pypi/v/bounthunt?color=blue&style=flat-square)](https://pypi.org/project/bounthunt/)
-[![Python version](https://img.shields.io/pypi/pyversions/bounthunt?style=flat-square)](https://pypi.org/project/bounthunt/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/bess1lie/bounthunt/ci.yml?branch=main&style=flat-square)](https://github.com/bess1lie/bounthunt/actions)
-[![Code Coverage](https://img.shields.io/badge/coverage-95%25-green?style=flat-square)](https://github.com/bess1lie/bounthunt)
-[![Style: Black](https://img.shields.io/badge/style-black-000000?style=flat-square)](https://github.com/psf/black)
-[![Type: Mypy](https://img.shields.io/badge/types-mypy-blue?style=flat-square)](http://mypy-lang.org/)
-[![Security: Bandit](https://img.shields.io/badge/security-bandit-yellow?style=flat-square)](https://github.com/PyCQA/bandit)
-[![Stars](https://img.shields.io/github/stars/bess1lie/bounthunt?style=flat-square)](https://github.com/bess1lie/bounthunt/stargazers)
-[![Issues](https://img.shields.io/github/issues/bess1lie/bounthunt?style=flat-square)](https://github.com/bess1lie/bounthunt/issues)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](https://github.com/bess1lie/bounthunt/pulls)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=plastic&logo=python&logoColor=white)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=plastic)](https://opensource.org/licenses/MIT)
+[![CI](https://img.shields.io/github/actions/workflow/status/bess1lie/bounthunt/ci.yml?branch=main&style=plastic)](https://github.com/bess1lie/bounthunt/actions)
+[![Stars](https://img.shields.io/github/stars/bess1lie/bounthunt?style=plastic)](https://github.com/bess1lie/bounthunt/stargazers)
+[![Issues](https://img.shields.io/github/issues/bess1lie/bounthunt?style=plastic)](https://github.com/bess1lie/bounthunt/issues)
+[![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen?style=plastic)](https://github.com/bess1lie/bounthunt/pulls)
 
 **Scope-aware recon orchestration for bug bounty programs.**
 
@@ -56,12 +51,17 @@ $ bounthunt report --format html
 - **Smart Notifications** — Telegram and Discord webhook alerts on changes
 - **Dockerized Workflow** — Multi-stage Docker build, `docker compose up -d` for 24/7 scans
 
-## 🛠️ Built With
+## 🛠️ Tech Stack
 
 - **Language:** Python 3.11+
+- **CLI:** [Typer](https://typer.tiangolo.com/)
+- **Terminal output:** [Rich](https://rich.readthedocs.io/)
+- **HTTP client:** [HTTPX](https://www.python-httpx.org/)
+- **DB & Storage:** [SQLite](https://www.sqlite.org/)
+- **Templates:** [Jinja2](https://jinja.palletsprojects.com/)
+- **Config:** [PyYAML](https://pyyaml.org/)
 - **Orchestration:** subfinder · dnsx · httpx · naabu · nuclei · katana
-- **Database:** SQLite
-- **Reports:** Jinja2
+- **Reports:** HTML/Markdown via Jinja2 with diff sections
 - **Notifications:** Telegram / Discord webhooks
 - **Deployment:** Docker
 

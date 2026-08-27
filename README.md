@@ -3,6 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=plastic&logo=python&logoColor=white)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=plastic)](https://opensource.org/licenses/MIT)
 [![CI](https://img.shields.io/github/actions/workflow/status/bess1lie/bounthunt/ci.yml?branch=main&style=plastic)](https://github.com/bess1lie/bounthunt/actions)
+[![PyPI](https://img.shields.io/badge/PyPI-bounthunt-3776AB?style=plastic&logo=pypi&logoColor=white)](https://pypi.org/project/bounthunt/)
 [![Stars](https://img.shields.io/github/stars/bess1lie/bounthunt?style=plastic)](https://github.com/bess1lie/bounthunt/stargazers)
 [![Issues](https://img.shields.io/github/issues/bess1lie/bounthunt?style=plastic)](https://github.com/bess1lie/bounthunt/issues)
 [![PRs](https://img.shields.io/badge/PRs-welcome-brightgreen?style=plastic)](https://github.com/bess1lie/bounthunt/pulls)
@@ -90,11 +91,27 @@ graph TD
 
 ---
 
+## 📦 Installation
+
+```bash
+# From PyPI (recommended)
+pip install bounthunt
+bounthunt --help
+
+# Isolated with pipx
+pipx install bounthunt
+
+# From source (latest dev)
+git clone https://github.com/bess1lie/bounthunt.git
+cd bounthunt
+pip install -e .
+```
+
 ## ⚡ Quick Start
 
 ### Prerequisites
 - Python 3.11+
-- Docker (recommended) or Go tools installed locally
+- Docker (recommended) or Go tools (`subfinder`, `dnsx`, `httpx`, `naabu`, `nuclei`, `katana`) for full pipeline
 
 ### Using Docker (Recommended)
 ```bash
@@ -103,14 +120,19 @@ docker compose run --rm bounthunt scan /data/scope.yaml --all
 docker compose up -d
 ```
 
-### Using Source
+### Using PyPI + scope
 ```bash
-git clone https://github.com/bess1lie/bounthunt.git
-cd bounthunt
-pip install .
-bounthunt init scope.yaml
+# 1. Create scope.yaml (allowlist — every request gated)
+cat > scope.yaml <<'YAML'
+targets: ["https://example.com"]
+allowlist: ["example.com"]
+YAML
+
 bounthunt scan scope.yaml --all
+bounthunt report --format html -o report.html
 ```
+
+> Scope-aware by design — out-of-scope hosts are blocked before any tool runs. See `scope.example.yaml`.
 
 ---
 
